@@ -15,7 +15,7 @@ uint16_t joints[joint_num];                 // Two bytes for each joint number
 uint16_t grippers[gripper_num];
 
 void setup() {
-  Serial.begin(baudrate);                       // opens serial port, sets data rate to 9600 bps
+  Serial.begin(baudrate);                       // opens serial port, sets baud rate
 }
 
 void loop() {

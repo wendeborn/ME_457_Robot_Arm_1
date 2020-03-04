@@ -75,7 +75,7 @@ void sendGripper(){
           gripper |= lo;
           grippers[i] = gripper;
         }
-          Serial.write(1);
+          Serial.write(6);
             for (int i = 0; i < gripper_num ; i++){
               Serial.write(highByte(grippers[i]));
               Serial.write(lowByte(grippers[i]));

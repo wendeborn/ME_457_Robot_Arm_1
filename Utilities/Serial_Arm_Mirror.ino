@@ -1,3 +1,10 @@
+/***************************
+* Arduino Sketch to control a Dynamixel robot arm
+* ME 457/557  
+* 3/3/2020
+* Drew Wendeborn
+* dw8@pdx.edu
+***************************/
 
 const uint8_t joint_num = 5;                // Number of joints in the robot arm
 const uint8_t gripper_num = 1;

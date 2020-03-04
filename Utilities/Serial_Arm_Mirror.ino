@@ -1,39 +1,81 @@
 
-const uint8_t joint_num = 5; // Number of joints in the robot arm
+const uint8_t joint_num = 5;                // Number of joints in the robot arm
+const uint8_t gripper_num = 1;
+const uint16_t baudrate = 9600;
 
-uint8_t incomingByte = 0; // for incoming serial data
-uint16_t servo_value = 0; //for the 16 bit number for servo data
-uint16_t joints[joint_num]; // Two bytes for each number
+uint8_t incomingByte = 0;                   // for incoming serial data
+uint16_t joints[joint_num];                 // Two bytes for each number
+uint16_t grippers[gripper_num];
 
 void setup() {
-  Serial.begin(9600); // opens serial port, sets data rate to 9600 bps
+  Serial.begin(baudrate);                       // opens serial port, sets data rate to 9600 bps
 }
 
 void loop() {
-  // reply only when you receive data:
+   // reply only when you receive data:
   if (Serial.available() > 0) {             // Check to see if serial data is available
     // read the incoming byte:
-    incomingByte = Serial.read();           // Read incoming byte and decide what to do with it
-      if (incomingByte == 1);
+     incomingByte = Serial.read(); 
+      if (incomingByte == 1){
+        sendThetas();
+      } 
+      else if (incomingByte == 2){
+        driveJoints();
+      }
+      else if (incomingByte == 5){
+        driveGripper();
+      }
+      else if (incomingByte == 6){
+        sendGripper();
+      }
+      else {
+         raiseError();
+      }
+  }
+}
+
+// send robot arm joints to MATLAB
+void sendThetas(){                            
         for(int i = 0; i < joint_num ; i++){
           uint8_t hi = Serial.read();
           uint8_t lo = Serial.read();
-          uint16_t joint = hi << 8;         // Bit shift the hi byte to the highByte position in the variable
+          uint16_t joint = hi << 8;           // Bit shift the hi byte to the highByte position in the variable
           joint |= lo;
           joints[i] = joint;
         }
-    //servo_value = incomingByte << 8;
-    //servo_value |= incomingByte;
+          Serial.write(1);
+            for (int i = 0; i < joint_num ; i++){
+              Serial.write(highByte(joints[i]));
+              Serial.write(lowByte(joints[i]));
+            }
+}
 
-    // say what you got:
-   // Serial.print("Contents of joints: ");
-   Serial.print(1);
-    for (int i = 0; i < joint_num ; i++){
-      Serial.print(highByte(joints[i]), DEC);
-      Serial.print(lowByte(joints[i]),DEC);
-    }
-    //Serial.println(incomingByte, DEC);
-    //Serial.print("I received servo_value: ");
-    //Serial.println(servo_value, BIN);
-  }
+//function to drive the robot joints
+void driveJoints(){
+}
+
+//function to move gripper arm
+void driveGripper(){
+  
+}
+
+//function to send gripper position to MATLAB
+void sendGripper(){
+  for(int i = 0; i < gripper_num ; i++){
+          uint8_t hi = Serial.read();
+          uint8_t lo = Serial.read();
+          uint16_t gripper = hi << 8;           // Bit shift the hi byte to the highByte position in the variable
+          gripper |= lo;
+          grippers[i] = gripper;
+        }
+          Serial.write(1);
+            for (int i = 0; i < gripper_num ; i++){
+              Serial.write(highByte(grippers[i]));
+              Serial.write(lowByte(grippers[i]));
+            }
+}
+
+//function to signal an error has occured
+void raiseError(){
+  Serial.write(4);
 }

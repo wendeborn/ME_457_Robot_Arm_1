@@ -12,11 +12,13 @@ DynamixelWorkbench dxl_wb;
 const uint8_t joint_num = 5;                // Number of joints in the robot arm, ordering base to end effector
 const uint8_t gripper_num = 1;              // Number of grippers on end effector
 const uint16_t baudrate = 9600;
-const uint16_t arm_delay = 1000;            //Sets the delay in milliseconds between joint movements
+const uint16_t arm_delay = 0;               //Sets the delay in milliseconds between joint movements
 
+uint16_t velocity = 30;                     // Sets the overall Dynamixel velocity of joint movement
 uint16_t model_number = 1;                  // Dynamixel model number, defaults to 1
 uint8_t incomingByte = 0;                   // for incoming serial data
 uint16_t joints[joint_num];                 // Two bytes for each joint number
+uint16_t thetas[joint_num];                 // Array to store the joint angles
 uint16_t grippers[gripper_num];
 
 void setup() {
@@ -43,6 +45,9 @@ void loop() {
       else if (incomingByte == 6){          //Arduino receives a 6 and sends the gripper position(s) to MATLAB
         sendGripper();
       }
+      else if (incomingByte == 7){          //Arduino receives a 6 and sends the gripper position(s) to MATLAB
+        changeSpeed();
+      }
       else {
          raiseError();                      //If none of the triggers are received then send back an error
       }
@@ -53,8 +58,11 @@ void loop() {
 void sendThetas(){                            
        Serial.write(1);
        for (int i = 0; i < joint_num ; i++){
-          Serial.write(highByte(joints[i]));
-          Serial.write(lowByte(joints[i]));
+          int32_t theta = 0;
+          dxl_wb.itemRead(i, "Present_Position", &theta);
+          thetas[i] = (uint16_t)theta;
+          Serial.write(highByte(thetas[i]));
+          Serial.write(lowByte(thetas[i]));
        }
 }
 
@@ -65,23 +73,15 @@ void driveJoints(){
           uint8_t lo = Serial.read();
           uint16_t joint = hi << 8;           // Bit shift the hi byte to the highByte position in the variable
           joint |= lo;
-          joints[i] = joint;
+          joints[i] = joint-10;               // Subtract 10 for reserved numbers corresponding to serial codes
         }
 
-   dxl_wb.ping(4, &model_number);
-   dxl_wb.goalPosition(4, (int32_t)joints[3]);
-  // Serial.write(joints[4]);
-   delay(arm_delay);
-   
-   for (int i = 0; i < joint_num; i++){      //Could use the scan function here instead
-    Serial.print("joint: ");
-    Serial.println(joints[i]);
-    Serial.print((int32_t)joints[i]);
-         // dxl_wb.ping(i, &model_number);
-          //dxl_wb.goalPosition(i,(int32_t)joints[i]);
-          delay(arm_delay);
-    }
-    
+   for (int i = 0; i < joint_num; i++){       //Could use the scan function here instead
+         dxl_wb.ping(i, &model_number);
+         dxl_wb.goalVelocity(i, (int32_t)&velocity);
+         dxl_wb.goalPosition(i,(int32_t)joints[i]);
+         delay(arm_delay);
+    }  
 }
 
 //function to move gripper arm
@@ -91,7 +91,7 @@ void driveGripper(){
           uint8_t lo = Serial.read();
           uint16_t gripper = hi << 8;           // Bit shift the hi byte to the highByte position in the variable
           gripper |= lo;
-          grippers[i] = gripper;
+          grippers[i] = gripper-10;
         }
 }
 
@@ -102,6 +102,17 @@ void sendGripper(){
               Serial.write(highByte(grippers[i]));
               Serial.write(lowByte(grippers[i]));
             }
+}
+
+//function to change all motor speeds
+void changeSpeed(){
+          for(int i = 0; i <= 1 ; i++){
+          uint8_t hi = Serial.read();
+          uint8_t lo = Serial.read();
+          velocity = hi << 8;           // Bit shift the hi byte to the highByte position in the variable
+          velocity |= lo;
+          velocity = velocity-10;               // Subtract 10 for reserved numbers corresponding to serial codes
+        }
 }
 
 //function to signal an error has occured
